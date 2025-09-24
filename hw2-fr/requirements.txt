@@ -1,0 +1,11 @@
+numpy
+pandas
+scipy
+jupyterlab
+matplotlib
+seaborn
+youtube-dl
+tqdm
+ffmpeg-python
+soundfile
+librosa
