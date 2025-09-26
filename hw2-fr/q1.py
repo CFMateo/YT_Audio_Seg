@@ -9,9 +9,20 @@ def count_labels(labels: str) -> int:
     Par exemple:
     "/m/04rlf,/m/06_fw,/m/09x0r" -> 3
     """
-    # TODO
-    pass
+    
+    unique = set(labels.split(","))  # split et supprime doublons
+    return len(unique)
 
+
+
+
+
+with open("./hw2-fr/data/ontology.json", "r") as f:
+    data = json.load(f) # une liste de dictionnaires
+
+data_ID_to_name = {}
+for i in range(len(data)):
+    data_ID_to_name[(data[i]["id"])]= data[i]["name"] # clé = ID et valeur = name
 
 def convert_id(ID: str) -> str:
     """
@@ -23,8 +34,10 @@ def convert_id(ID: str) -> str:
     Même si lire le fichier à chaque fois et parcourir les éléments pour trouver une correspondance fonctionne assez bien dans notres cas.
     Pensez à des moyens d'accélérer ce processus si, par exemple, cette fonction devait être exécutée 100 000 fois.
     """
-    # TODO
-    pass
+
+    return data_ID_to_name[ID]  #retourne la valeur de la clé ID, i.e le nom associé
+    
+    
 
 
 def convert_ids(labels: str) -> str:
@@ -35,8 +48,19 @@ def convert_ids(labels: str) -> str:
     Par exemple:
     "/m/04rlf,/m/06_fw,/m/09x0r" -> "Musique|Skateboard|Discours"
     """
-    # TODO
-    pass
+    #D'abord on determine sépare les differents IDS:
+    unique = list(dict.fromkeys(labels.split(",")))
+
+    liste_noms = []
+
+    for el in unique:
+        liste_noms.append(convert_id(el))
+
+
+    liste_noms = "|".join(liste_noms)
+        
+    return liste_noms
+    
 
 
 def contains_label(labels: pd.Series, label: str) -> pd.Series:
@@ -72,9 +96,12 @@ def get_correlation(labels: pd.Series, label_1: str, label_2: str) -> float:
 
 if __name__ == "__main__":
     print(count_labels("/m/04rlf,/m/06_fw,/m/09x0r"))
+    
+    
     print(convert_id("/m/04rlf"))
+    
     print(convert_ids("/m/04rlf,/m/06_fw,/m/09x0r"))
-
+"""
     series = pd.Series([
         "Music|Skateboard|Speech",
         "Voice|Speech",
@@ -82,3 +109,4 @@ if __name__ == "__main__":
     ])
     print(contains_label(series, "Music"))
     print(get_correlation(series, "Music", "Piano"))
+    """
