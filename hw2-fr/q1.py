@@ -49,7 +49,7 @@ def convert_ids(labels: str) -> str:
     "/m/04rlf,/m/06_fw,/m/09x0r" -> "Musique|Skateboard|Discours"
     """
     #D'abord on determine sépare les differents IDS:
-    unique = list(dict.fromkeys(labels.split(",")))
+    unique = list(labels.split(","))
 
     liste_noms = []
 
@@ -69,7 +69,7 @@ def contains_label(labels: pd.Series, label: str) -> pd.Series:
     (c'est-à-dire "|" sépare les noms d'étiquettes comme "Music|Skateboard|Speech") et renvoie une pandas Series avec juste
     les valeurs qui incluent `label`.
 
-    Par exemple, étant donné le label "Music" et la série suivante :
+    Par exemple, étant donné le label "Music" et la série suivante :
     "Music|Skateboard|Speech"
     "Voice|Speech"
     "Music|Piano"
@@ -78,8 +78,16 @@ def contains_label(labels: pd.Series, label: str) -> pd.Series:
     "Music|Skateboard|Speech"
     "Music|Piano"
     """
-    # TODO
-    pass
+
+    resultat = []
+
+    for chaine in labels:
+        unique = list(chaine.split("|"))
+        if label in unique: 
+            resultat.append(chaine)
+
+    # convertir la liste en Series pandas
+    return pd.Series(resultat, dtype=labels.dtype)
 
 
 def get_correlation(labels: pd.Series, label_1: str, label_2: str) -> float:
@@ -90,8 +98,23 @@ def get_correlation(labels: pd.Series, label_1: str, label_2: str) -> float:
     Par exemple, supposons que la pandas Series comporte 1 000 valeurs, dont 120 ont label_1. Si 30 des 120
     ont label_2, votre fonction doit renvoyer 0,25.
     """
-    # TODO
-    pass
+
+    
+    # Recup nb de fois qu'apparait label 1
+    tokensL1 = contains_label(labels, label_1)
+    nbTokens1 = tokensL1.size
+
+    # On va chercher dans les tokens contenant label1 le label num 2:
+    tokensL2 = contains_label(tokensL1,label_2)
+    
+    nbTokens2 = tokensL2.size
+   
+
+    #Calcul de la proportion : 
+    if nbTokens1 != 0:
+        prop = nbTokens2/nbTokens1
+
+    return prop
 
 
 if __name__ == "__main__":
@@ -101,12 +124,13 @@ if __name__ == "__main__":
     print(convert_id("/m/04rlf"))
     
     print(convert_ids("/m/04rlf,/m/06_fw,/m/09x0r"))
-"""
     series = pd.Series([
         "Music|Skateboard|Speech",
         "Voice|Speech",
         "Music|Piano"
     ])
     print(contains_label(series, "Music"))
+
+
     print(get_correlation(series, "Music", "Piano"))
-    """
+    
