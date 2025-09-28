@@ -20,8 +20,26 @@ def download_audio(YTID: str, path: str) -> None:
     'https://www.youtube.com/watch?v='+YTID
     - path : Le chemin d'accès au fichier où l'audio sera enregistré
     """
-    # TODO
-    pass
+    if exists(path):
+        return   # on sort direct
+
+    ydl_opts = { "outtmpl": path, 
+    "retries": 3,
+    "quiet": True,
+    "no_warnings": True,
+    "postprocessors": [
+    {
+        "preferredcodec": "mp3",
+    }]
+
+    }
+
+    try:
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([f"https://www.youtube.com/watch?v={YTID}"])
+    except Exception as e:
+        print(f"Erreur lors du téléchargement {YTID}: {e}")
+
 
 
 def cut_audio(in_path: str, out_path: str, start: float, end: float) -> None:
