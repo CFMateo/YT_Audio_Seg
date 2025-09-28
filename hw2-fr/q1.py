@@ -17,7 +17,7 @@ def count_labels(labels: str) -> int:
 
 
 
-with open("./hw2-fr/data/ontology.json", "r") as f:
+with open("./data/ontology.json", "r") as f:
     data = json.load(f) # une liste de dictionnaires
 
 data_ID_to_name = {}
