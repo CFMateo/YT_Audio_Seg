@@ -5,6 +5,12 @@ from tqdm import tqdm
 from q2 import download_audio, cut_audio
 from typing import List
 
+import json
+from q1 import contains_label
+
+
+
+
 
 def filter_df(csv_path: str, label: str) -> List[str]:
     """
@@ -12,9 +18,15 @@ def filter_df(csv_path: str, label: str) -> List[str]:
 
     Par exemple:
     get_ids("audio_segments_clean.csv", "Speech") ne doit renvoyer que les lignes où l'un des libellés est "Speech"
+    
     """
-    # TODO
-    pass
+    
+    data = pd.read_csv("audio_segments_clean.csv")
+    return (contains_label(data['label_names'], label))
+
+
+    
+
 
 
 def data_pipeline(csv_path: str, label: str) -> None:

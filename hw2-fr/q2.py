@@ -1,4 +1,4 @@
-import youtube_dl
+
 import ffmpeg
 import pandas as pd
 import numpy as np
@@ -6,6 +6,9 @@ import csv
 import threading
 from tqdm import tqdm
 from os.path import exists
+
+import yt_dlp as youtube_dl
+
 
 
 def download_audio(YTID: str, path: str) -> None:
@@ -15,30 +18,34 @@ def download_audio(YTID: str, path: str) -> None:
 
     ** Utilisez la librairie youtube_dl : https://github.com/ytdl-org/youtube-dl/ **
     
-    Arguments :
-    - YTID : Contient l'identifiant youtube, la vidéo youtube correspondante peut être trouvée sur
+    Arguments:
+    - YTID: Contient l'identifiant youtube, la vidéo youtube correspondante peut être trouvée sur
     'https://www.youtube.com/watch?v='+YTID
-    - path : Le chemin d'accès au fichier où l'audio sera enregistré
+    - path: Le chemin d'accès au fichier où l'audio sera enregistré
     """
     if exists(path):
         return   # on sort direct
 
-    ydl_opts = { "outtmpl": path, 
-    "retries": 3,
-    "quiet": True,
-    "no_warnings": True,
-    "postprocessors": [
-    {
-        "preferredcodec": "mp3",
-    }]
-
+    ydl_opts = {
+        "quiet": True,
+        'no_warnings': True,
+        'format': 'bestaudio/best',
+        'outtmpl': path,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
     }
 
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([f"https://www.youtube.com/watch?v={YTID}"])
     except Exception as e:
-        print(f"Erreur lors du téléchargement {YTID}: {e}")
+        print(f"Erreur lors du téléchargement de la vidéo d'URL: {YTID}: {e}")
+
+
+
 
 
 
@@ -46,12 +53,22 @@ def cut_audio(in_path: str, out_path: str, start: float, end: float) -> None:
     """
     Créez une fonction qui coupe l'audio de in_path pour n'inclure que le segment de start à end et l'enregistre dans out_path.
 
-    ** Utilisez la bibliothèque ffmpeg : https://github.com/kkroening/ffmpeg-python
-    Arguments :
-    - in_path : Chemin du fichier audio à couper
-    - out_path : Chemin du fichier pour enregistrer l'audio coupé
+    ** Utilisez la bibliothèque ffmpeg: https://github.com/kkroening/ffmpeg-python
+    Arguments:
+    - in_path: Chemin du fichier audio à couper
+    - out_path: Chemin du fichier pour enregistrer l'audio coupé
     - start : Indique le début de la séquence (en secondes)
     - end : Indique la fin de la séquence (en secondes)
     """
-    # TODO
-    pass
+    ffmpeg.input(in_path, ss=start, t=(end-start)).output(out_path).run(overwrite_output=True)
+
+
+"""
+if __name__== '__main__':
+
+    download_audio(
+        "-1LQP2wemiQ",
+        "TANGUUUUY"
+    )
+"""
+

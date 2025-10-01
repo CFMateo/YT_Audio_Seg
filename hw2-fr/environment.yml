@@ -1,0 +1,16 @@
+name: ift6758-conda-env-2
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.6
+  - numpy
+  - pandas
+  - scipy
+  - jupyterlab
+  - matplotlib
+  - seaborn
+  - yt-dlp
+  - tqdm
+  - ffmpeg-python
+  - pysoundfile
+  - librosa

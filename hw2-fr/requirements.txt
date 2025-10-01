@@ -4,8 +4,11 @@ scipy
 jupyterlab
 matplotlib
 seaborn
-youtube-dl
+yt-dlp
 tqdm
 ffmpeg-python
 soundfile
 librosa
+
+
+    
