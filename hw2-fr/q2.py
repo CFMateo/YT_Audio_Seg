@@ -60,15 +60,18 @@ def cut_audio(in_path: str, out_path: str, start: float, end: float) -> None:
     - start : Indique le début de la séquence (en secondes)
     - end : Indique la fin de la séquence (en secondes)
     """
-    ffmpeg.input(in_path, ss=start, t=(end-start)).output(out_path).run(overwrite_output=True)
+    ffmpeg.input(f"{in_path}.mp3", ss=start, t=(end-start)).output(f"{out_path}.mp3").run(overwrite_output=True)
 
-
-"""
+'''
 if __name__== '__main__':
 
     download_audio(
         "-1LQP2wemiQ",
         "TANGUUUUY"
     )
-"""
+
+    cut_audio('testRAW','tesstCUT',5,10)
+
+'''
+
 
