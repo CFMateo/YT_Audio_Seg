@@ -77,8 +77,15 @@ def data_pipeline(csv_path: str, label: str) -> None:
                 download_audio(ytid, raw_mp3)
 
             # 2) Cut (skip si présent)
-            if (not os.path.exists(cut_mp3)) and (os.path.exists(raw_mp3)):
-                cut_audio(raw_mp3, cut_mp3, start, end)
+            if not os.path.exists(cut_mp3):
+                cut_audio(f"{raw_mp3}.mp3", f"{cut_mp3}.mp3", start, end)
+            """
+            if index == 0:
+                print("CWD:", os.getcwd())
+                print("raw_mp3:", f"{raw_mp3}.mp3", "exists?", os.path.exists(f"{raw_mp3}.mp3"))
+                print("cut_mp3:", cut_mp3, "exists?", os.path.exists(cut_mp3))
+            """
+
                 
         except Exception as e:
             print(f"[ERREUR!!!! Avec:] YTID={row.get('YTID','?')}: {e}")

@@ -60,18 +60,21 @@ def cut_audio(in_path: str, out_path: str, start: float, end: float) -> None:
     - start : Indique le début de la séquence (en secondes)
     - end : Indique la fin de la séquence (en secondes)
     """
-    ffmpeg.input(f"{in_path}.mp3", ss=start, t=(end-start)).output(f"{out_path}.mp3").run(overwrite_output=True)
+    ffmpeg.input(in_path, ss=start, t=(end-start)).output(out_path).run(overwrite_output=True)
 
-'''
+import os
 if __name__== '__main__':
+    print("CWD:", os.getcwd())
 
-    download_audio(
-        "-1LQP2wemiQ",
-        "TANGUUUUY"
-    )
+    download_audio("-1LQP2wemiQ", "TEST_RAW")
+    print("raw exists?", os.path.exists("TEST_RAW"))
 
-    cut_audio('testRAW','tesstCUT',5,10)
 
-'''
+    cut_audio("TEST_RAW.mp3","TEST_CUT.mp3",5, 10)
+    print("cut exists?", os.path.exists("TEST_CUT"))
+
+
+
+
 
 
