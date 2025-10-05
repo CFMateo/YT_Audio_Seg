@@ -45,13 +45,6 @@ def data_pipeline(csv_path: str, label: str) -> None:
 
     Malheureusement, il est possible que certaines vidéos ne peuvent pas être téléchargées. Dans de tels cas, votre pipeline doit gérer l'échec en passant à la vidéo suivante avec l'étiquette.
     """
-    '''
-    df_filtrer = filter_df(csv_path,label)
-    long = len(df_filtrer)
-    df_filtrer["YTID"].apply(download_audio(sur lui,"/audio/<label>_raw/<ID>.mp3"))
-    for i in range(0,long):
-        cut_audio("/audio/<label>_raw/<ID>.mp3","/audio/<label>_cut/<ID>.mp3",df_filtrer['start_seconds'][i], df_filtrer['end_seconds'][i] )
-    '''
     df_filtrer = filter_df(csv_path, label)
     
 
@@ -69,8 +62,8 @@ def data_pipeline(csv_path: str, label: str) -> None:
             if end <= start:
                 continue # gere le cas si erreur entre start et end
 
-            raw_mp3 = os.path.join(raw_dir, f"{label}_raw_{ytid}")
-            cut_mp3 = os.path.join(cut_dir, f"{label}_cut_{ytid}")
+            raw_mp3 = os.path.join(raw_dir, ytid)
+            cut_mp3 = os.path.join(cut_dir, ytid)
 
             # 1) Download (skip si présent)
             if not os.path.exists(raw_mp3):
@@ -94,7 +87,7 @@ def data_pipeline(csv_path: str, label: str) -> None:
             
 
 
-
+from pathlib import Path
 def rename_files(path_cut: str, csv_path: str) -> None:
     """
     Supposons que nous voulons maintenant renommer les fichiers que nous avons téléchargés dans `path_cut` pour inclure les heures de début et de fin ainsi que la longueur du segment. Alors que
@@ -106,13 +99,54 @@ def rename_files(path_cut: str, csv_path: str) -> None:
     Par exemple
     "--BfvyPmVMo.mp3" -> "--BfvyPmVMo_20_30_10.mp3"
 
-    ## ATTENTION : supposez que l'YTID peut contenir des caractères spéciaux tels que '.' ou même '.mp3' ##
+    ## ATTENTION: supposez que l'YTID peut contenir des caractères spéciaux tels que '.' ou même '.mp3' ##
     """
-    # TODO
-    pass
+    # 1) CSV → mapping YTID -> (start,end,length) en entiers
+    df = pd.read_csv(csv_path, usecols=["YTID", "start_seconds", "end_seconds"])
+    df["start_int"]  = df["start_seconds"].round().astype(int)
+    df["end_int"]    = df["end_seconds"].round().astype(int)
+    df["length_int"] = (df["end_int"] - df["start_int"]).clip(lower=0)
+    info = df.set_index("YTID")[["start_int","end_int","length_int"]].to_dict("index")
+
+
+    # print(os.listdir(path_cut))
+    if not os.path.exists(path_cut): # Eviter erreur quand on a pas encore  appeler data pipeline
+        return
+
+
+
+    # Parcours des fichiers existants
+    for fname in os.listdir(path_cut):
+        print(fname)
+        # Récupérer l'ID via regex pour gérer les noms bizarres
+        match = re.search(r"([A-Za-z0-9_-]+)", fname)   
+        ytid = match.group(1)
+        
+        #print(ytid,'ICI')
+
+        # Vérifier que l'YTID est bien dans le CSV, ca evite les erreurs qd je relance sur csv deja modifie
+        if ytid not in info:
+            continue
+      
+        # Extraire les infos
+        meta = info[ytid]
+        start, end, length = meta["start_int"], meta["end_int"], meta["length_int"]
+
+        # Construire le nouveau nom
+        old_path = os.path.join(path_cut, fname)
+        new_name = f"{ytid}_{start}_{end}_{length}.mp3"
+        new_path = os.path.join(path_cut, new_name)
+
+        if os.path.exists(new_path):
+            # déjà renommé lors d’un run précédent, juste on ignore
+            pass
+        else:
+            os.rename(old_path, new_path)
+            
+            
 
 
 if __name__ == "__main__":
     print(filter_df("data/audio_segments_clean.csv", "Laughter"))
-    data_pipeline("data/audio_segments_clean.csv", "Laughter")
-    rename_files("Laughter_cut", "audio_segments_clean.csv")
+    #data_pipeline("data/audio_segments_clean.csv", "Laughter")
+    rename_files("audio/Laughter_cut", "data/audio_segments_clean.csv")
