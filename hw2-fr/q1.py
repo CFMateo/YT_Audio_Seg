@@ -79,15 +79,12 @@ def contains_label(labels: pd.Series, label: str) -> pd.Series:
     "Music|Piano"
     """
 
-    resultat = []
-
-    for chaine in labels:
-        unique = list(chaine.split("|"))
-        if label in unique: 
-            resultat.append(chaine)
-
-    # convertir la liste en Series pandas
-    return pd.Series(resultat, dtype=labels.dtype)
+    res = []
+    for i, chaine in labels.items():      # i = index, chaine = valeur
+        parts = str(chaine).split('|') 
+        if label in parts:
+            res.append(i)                 # on garde l’index
+    return labels.loc[res]
 
 
 def get_correlation(labels: pd.Series, label_1: str, label_2: str) -> float:

@@ -13,7 +13,7 @@ from q2 import download_audio, cut_audio
 
 
 
-def filter_df(csv_path: str, label: str) -> List[str]: #pd.DataFrame plutot nan 
+def filter_df(csv_path: str, label: str) -> pd.DataFrame:  #List[str]
     """
     Écrivez une fonction qui prend le path vers le csv traité (dans la partie notebook de q1) et renvoie un df avec seulement les rangées qui contiennent l'étiquette `label`.
 
@@ -21,14 +21,9 @@ def filter_df(csv_path: str, label: str) -> List[str]: #pd.DataFrame plutot nan
     get_ids("audio_segments_clean.csv", "Speech") ne doit renvoyer que les lignes où l'un des libellés est "Speech"
     
     """
-    
     data = pd.read_csv(csv_path)
-    #return (contains_label(data['label_names'], label).to_frame()) # le frame permet de tranf la series en df
-    filtrer = data["label_names"].apply(lambda el: label in el.split("|")) # donne une Series, l'unique colonne a sur chaque ligen soit True soit False.
-    return data[filtrer].reset_index(drop=True) # retourne tte les lignes qui contiennent label dans leurs colonne label names 9tte celle qui etait marquer par true par le filtre)
-
-
-    
+    filtered_labels = contains_label(data["label_names"], label)
+    return data[data["label_names"].isin(filtered_labels)] # is in retourne que les ligens qui contiennent l'arg
 
 
 
@@ -81,13 +76,10 @@ def data_pipeline(csv_path: str, label: str) -> None:
 
                 
         except Exception as e:
-            print(f"[ERREUR!!!! Avec:] YTID={row.get('YTID','?')}: {e}")
             continue
 
             
 
-
-from pathlib import Path
 def rename_files(path_cut: str, csv_path: str) -> None:
     """
     Supposons que nous voulons maintenant renommer les fichiers que nous avons téléchargés dans `path_cut` pour inclure les heures de début et de fin ainsi que la longueur du segment. Alors que
@@ -99,29 +91,34 @@ def rename_files(path_cut: str, csv_path: str) -> None:
     Par exemple
     "--BfvyPmVMo.mp3" -> "--BfvyPmVMo_20_30_10.mp3"
 
-    ## ATTENTION: supposez que l'YTID peut contenir des caractères spéciaux tels que '.' ou même '.mp3' ##
+    ## ATTENTION: supposez que l'YTID peut contenir des caractères spéciaux tels que'.' ou même '.mp3' ##
     """
-    # 1) CSV → mapping YTID -> (start,end,length) en entiers
+    if not os.path.exists(path_cut):
+        return
+
+    # Lire le CSV sans usecols (sinon KeyError)
+    df = pd.read_csv(csv_path)
+    # normalise les noms pour éviter les espaces ou majuscules
+    df.columns = df.columns.str.strip()
+
+    # Vérifie qu’on a bien les colonnes nécessaires
+    for col in ["YTID", "start_seconds", "end_seconds"]:
+        if col not in df.columns:
+            return
+
+    # CSV vers mapping YTID vers (start,end,length) en entiers
     df = pd.read_csv(csv_path, usecols=["YTID", "start_seconds", "end_seconds"])
     df["start_int"]  = df["start_seconds"].round().astype(int)
     df["end_int"]    = df["end_seconds"].round().astype(int)
     df["length_int"] = (df["end_int"] - df["start_int"]).clip(lower=0)
     info = df.set_index("YTID")[["start_int","end_int","length_int"]].to_dict("index")
 
-
-    # print(os.listdir(path_cut))
-    if not os.path.exists(path_cut): # Eviter erreur quand on a pas encore  appeler data pipeline
-        return
-
-
-
+    
     # Parcours des fichiers existants
     for fname in os.listdir(path_cut):
-        print(fname)
-        # Récupérer l'ID via regex pour gérer les noms bizarres
-        match = re.search(r"([A-Za-z0-9_-]+)", fname)   
-        ytid = match.group(1)
-        
+        #print(fname)
+        ytid = fname.rsplit(".mp3", 1)[0]
+
         #print(ytid,'ICI')
 
         # Vérifier que l'YTID est bien dans le CSV, ca evite les erreurs qd je relance sur csv deja modifie
@@ -139,14 +136,18 @@ def rename_files(path_cut: str, csv_path: str) -> None:
 
         if os.path.exists(new_path):
             # déjà renommé lors d’un run précédent, juste on ignore
-            pass
-        else:
-            os.rename(old_path, new_path)
-            
+            try:
+                os.remove(old_path)
+            except Exception:
+                pass
+            continue
+
+        os.rename(old_path, new_path)
             
 
-
+"""
 if __name__ == "__main__":
     print(filter_df("data/audio_segments_clean.csv", "Laughter"))
     #data_pipeline("data/audio_segments_clean.csv", "Laughter")
     rename_files("audio/Laughter_cut", "data/audio_segments_clean.csv")
+"""

@@ -31,18 +31,20 @@ def download_audio(YTID: str, path: str) -> None:
         'no_warnings': True,
         'format': 'bestaudio/best',
         'outtmpl': path,
+        "cookiefile": "cookies.txt",
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
+         "ignoreerrors": True,
     }
 
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([f"https://www.youtube.com/watch?v={YTID}"])
     except Exception as e:
-        print(f"Erreur lors du téléchargement de la vidéo d'URL: {YTID}: {e}")
+        return
 
 
 
