@@ -60,11 +60,11 @@ def data_pipeline(csv_path: str, label: str) -> None:
             raw_mp3 = os.path.join(raw_dir, ytid)
             cut_mp3 = os.path.join(cut_dir, ytid)
 
-            # 1) Download (skip si présent)
+            #  download (skip si présent)
             if not os.path.exists(raw_mp3):
                 download_audio(ytid, raw_mp3)
 
-            # 2) Cut (skip si présent)
+            # cut (skip si présent)
             if not os.path.exists(cut_mp3):
                 cut_audio(f"{raw_mp3}.mp3", f"{cut_mp3}.mp3", start, end)
             """
@@ -93,57 +93,46 @@ def rename_files(path_cut: str, csv_path: str) -> None:
 
     ## ATTENTION: supposez que l'YTID peut contenir des caractères spéciaux tels que'.' ou même '.mp3' ##
     """
-    if not os.path.exists(path_cut):
+    if not os.path.isdir(path_cut):
         return
 
-    # Lire le CSV sans usecols (sinon KeyError)
+    #  Lecture unique + normalisation d’en-têtes
     df = pd.read_csv(csv_path)
-    # normalise les noms pour éviter les espaces ou majuscules
-    df.columns = df.columns.str.strip()
+    df.columns = [re.sub(r'^[#\s]+', '', c).strip() for c in df.columns]
+    #  variantes fréquentes
+    df = df.rename(columns={
+        'startseconds': 'start_seconds',
+        'endseconds': 'end_seconds'
+    })
 
-    # Vérifie qu’on a bien les colonnes nécessaires
-    for col in ["YTID", "start_seconds", "end_seconds"]:
-        if col not in df.columns:
-            return
-
-    # CSV vers mapping YTID vers (start,end,length) en entiers
-    df = pd.read_csv(csv_path, usecols=["YTID", "start_seconds", "end_seconds"])
-    df["start_int"]  = df["start_seconds"].round().astype(int)
-    df["end_int"]    = df["end_seconds"].round().astype(int)
-    df["length_int"] = (df["end_int"] - df["start_int"]).clip(lower=0)
-    info = df.set_index("YTID")[["start_int","end_int","length_int"]].to_dict("index")
+    required = {'YTID', 'start_seconds', 'end_seconds'}
+    if not required.issubset(df.columns):
+        return  # rien à faire si les colonnes clés manquent
 
     
-    # Parcours des fichiers existants
+    df['start_int']  = df['start_seconds'].round().astype(int)
+    df['end_int']    = df['end_seconds'].round().astype(int)
+    df['length_int'] = (df['end_int'] - df['start_int']).clip(lower=0)
+
+    info = df.set_index('YTID')[['start_int','end_int','length_int']].to_dict('index')
+
+    # cas part
     for fname in os.listdir(path_cut):
-        #print(fname)
-        ytid = fname.rsplit(".mp3", 1)[0]
-
-        #print(ytid,'ICI')
-
-        # Vérifier que l'YTID est bien dans le CSV, ca evite les erreurs qd je relance sur csv deja modifie
-        if ytid not in info:
+        if not fname.endswith('.mp3'):
             continue
-      
-        # Extraire les infos
-        meta = info[ytid]
-        start, end, length = meta["start_int"], meta["end_int"], meta["length_int"]
+        ytid = re.sub(r'\.mp3$', '', fname)  
 
-        # Construire le nouveau nom
+        meta = info.get(ytid)
+        if not meta:
+            continue  # pas dans le CSV, juste ignore
+
+        new_name = f"{ytid}_{meta['start_int']}_{meta['end_int']}_{meta['length_int']}.mp3"
         old_path = os.path.join(path_cut, fname)
-        new_name = f"{ytid}_{start}_{end}_{length}.mp3"
         new_path = os.path.join(path_cut, new_name)
 
-        if os.path.exists(new_path):
-            # déjà renommé lors d’un run précédent, juste on ignore
-            try:
-                os.remove(old_path)
-            except Exception:
-                pass
-            continue
-
+        if old_path == new_path or os.path.exists(new_path):
+            continue  # idempotent: ne supprime rien
         os.rename(old_path, new_path)
-            
 
 """
 if __name__ == "__main__":
