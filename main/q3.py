@@ -1,13 +1,18 @@
 import re
 import os
 import pandas as pd
+from pathlib import Path
 from tqdm import tqdm
-from q2 import download_audio, cut_audio
-from typing import List
-
-import json
 from q1 import contains_label
 from q2 import download_audio, cut_audio
+from typing import Optional
+
+
+def _segment_filename(ytid: str, start: float, end: float) -> str:
+    start_int = int(round(start))
+    end_int = int(round(end))
+    length_int = max(0, end_int - start_int)
+    return f"{ytid}_{start_int}_{end_int}_{length_int}.mp3"
 
 
 
@@ -27,7 +32,7 @@ def filter_df(csv_path: str, label: str) -> pd.DataFrame:  #List[str]
 
 
 
-def data_pipeline(csv_path: str, label: str) -> None:
+def data_pipeline(csv_path: str, label: str, cookiefile: Optional[str] = None) -> None:
     """
     En utilisant vos fonctions précédemment créées, écrivez une fonction qui prend un csv traité et pour chaque vidéo avec l'étiquette donnée:
     1. Le télécharge à <label>_raw/<ID>.mp3
@@ -39,7 +44,15 @@ def data_pipeline(csv_path: str, label: str) -> None:
     Utilisez tqdm pour suivre la progression du processus de téléchargement (https://tqdm.github.io/)
 
     Malheureusement, il est possible que certaines vidéos ne peuvent pas être téléchargées. Dans de tels cas, votre pipeline doit gérer l'échec en passant à la vidéo suivante avec l'étiquette.
+
+    cookiefile est facultatif et doit désigner un fichier conservé hors du dépôt.
     """
+    if cookiefile is not None:
+        cookie_path = Path(cookiefile).expanduser()
+        if not cookie_path.is_file():
+            raise FileNotFoundError(f"Cookie file not found: {cookie_path}")
+        cookiefile = str(cookie_path)
+
     df_filtrer = filter_df(csv_path, label)
     
 
@@ -57,20 +70,29 @@ def data_pipeline(csv_path: str, label: str) -> None:
             if end <= start:
                 continue # gere le cas si erreur entre start et end
 
-            raw_mp3 = os.path.join(raw_dir, ytid)
-            cut_mp3 = os.path.join(cut_dir, ytid)
+            raw_stem = os.path.join(raw_dir, ytid)
+            cut_stem = os.path.join(cut_dir, ytid)
+            raw_mp3 = f"{raw_stem}.mp3"
+            cut_mp3 = f"{cut_stem}.mp3"
+            renamed_cut_mp3 = os.path.join(
+                cut_dir, _segment_filename(ytid, start, end)
+            )
+
+            if os.path.exists(cut_mp3) or os.path.exists(renamed_cut_mp3):
+                continue
 
             #  download (skip si présent)
             if not os.path.exists(raw_mp3):
-                download_audio(ytid, raw_mp3)
+                download_audio(ytid, raw_stem, cookiefile=cookiefile)
 
-            # cut (skip si présent)
-            if not os.path.exists(cut_mp3):
-                cut_audio(f"{raw_mp3}.mp3", f"{cut_mp3}.mp3", start, end)
+            if not os.path.exists(raw_mp3):
+                continue
+
+            cut_audio(raw_mp3, cut_mp3, start, end)
             """
             if index == 0:
                 print("CWD:", os.getcwd())
-                print("raw_mp3:", f"{raw_mp3}.mp3", "exists?", os.path.exists(f"{raw_mp3}.mp3"))
+                print("raw_mp3:", raw_mp3, "exists?", os.path.exists(raw_mp3))
                 print("cut_mp3:", cut_mp3, "exists?", os.path.exists(cut_mp3))
             """
 
@@ -126,7 +148,7 @@ def rename_files(path_cut: str, csv_path: str) -> None:
         if not meta:
             continue  # pas dans le CSV, juste ignore
 
-        new_name = f"{ytid}_{meta['start_int']}_{meta['end_int']}_{meta['length_int']}.mp3"
+        new_name = _segment_filename(ytid, meta['start_int'], meta['end_int'])
         old_path = os.path.join(path_cut, fname)
         new_path = os.path.join(path_cut, new_name)
 

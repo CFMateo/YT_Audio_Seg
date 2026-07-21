@@ -6,12 +6,14 @@ import csv
 import threading
 from tqdm import tqdm
 from os.path import exists
+from pathlib import Path
+from typing import Optional
 
 import yt_dlp as youtube_dl
 
 
 
-def download_audio(YTID: str, path: str) -> None:
+def download_audio(YTID: str, path: str, cookiefile: Optional[str] = None) -> None:
     """
     Créez une fonction qui télécharge l'audio de la vidéo Youtube avec un identifiant donné
     et l'enregistre dans le dossier donné par `path`. Téléchargez-le en mp3. S'il y a un problème lors du téléchargement du fichier, gérez l'exception. Si il y a déjà un fichier à `path`, la fonction devrait retourner sans tenter de le télécharger à nouveau.
@@ -21,9 +23,11 @@ def download_audio(YTID: str, path: str) -> None:
     Arguments:
     - YTID: Contient l'identifiant youtube, la vidéo youtube correspondante peut être trouvée sur
     'https://www.youtube.com/watch?v='+YTID
-    - path: Le chemin d'accès au fichier où l'audio sera enregistré
+    - path: Le chemin d'accès sans extension où l'audio sera enregistré
+    - cookiefile: Chemin facultatif vers un fichier de cookies conservé hors du dépôt
     """
-    if exists(path):
+    output_path = f"{path}.mp3"
+    if exists(output_path):
         return   # on sort direct
 
     ydl_opts = {
@@ -31,7 +35,6 @@ def download_audio(YTID: str, path: str) -> None:
         'no_warnings': True,
         'format': 'bestaudio/best',
         'outtmpl': path,
-        "cookiefile": "cookies.txt",
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -39,6 +42,12 @@ def download_audio(YTID: str, path: str) -> None:
         }],
          "ignoreerrors": True,
     }
+
+    if cookiefile is not None:
+        cookie_path = Path(cookiefile).expanduser()
+        if not cookie_path.is_file():
+            raise FileNotFoundError(f"Cookie file not found: {cookie_path}")
+        ydl_opts["cookiefile"] = str(cookie_path)
 
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -69,13 +78,11 @@ if __name__== '__main__':
     print("CWD:", os.getcwd())
 
     download_audio("-1LQP2wemiQ", "TEST_RAW")
-    print("raw exists?", os.path.exists("TEST_RAW"))
+    print("raw exists?", os.path.exists("TEST_RAW.mp3"))
 
 
     cut_audio("TEST_RAW.mp3","TEST_CUT.mp3",5, 10)
     print("cut exists?", os.path.exists("TEST_CUT"))
-
-
 
 
 

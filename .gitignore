@@ -1,0 +1,28 @@
+.DS_Store
+__MACOSX/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Credentials must stay outside the repository.
+cookies.txt
+*.cookies.txt
+*cookies*.txt
+
+# Downloaded and generated audio is reproducible from AudioSet metadata.
+audio/
+*_raw/
+*_cut/
+*.mp3
+*.wav
+*.m4a
+*.aac
+*.ogg
+*.opus
+*.flac
+*.webm
+*.mp4
+*.part
+*.ytdl
+TEST_RAW*
+TEST_CUT*

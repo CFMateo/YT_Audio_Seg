@@ -1,47 +1,66 @@
-# 🎧 AudioSet Data Pipeline: Scraping, Processing & Visualization
+# AudioSet data pipeline
 
-Ce projet implémente un pipeline complet d'ingénierie de données pour construire un ensemble de données audio structuré à partir de sources web brutes. L'objectif est de transformer un index de métadonnées (identifiants YouTube et timestamps) en un dataset nettoyé, segmenté et prêt pour des tâches de Machine Learning.
+This project turns AudioSet metadata into small, labelled audio segments for analysis. It covers metadata cleaning, label mapping, selective YouTube audio acquisition, FFmpeg segmentation, and exploratory visualisation.
 
+Downloaded media and authentication cookies are deliberately **not** stored in this repository. Audio is generated locally from the retained [AudioSet](https://research.google.com/audioset/) identifiers and timestamps.
 
-
-## Objectifs du Projet
-
-Le projet automatise la création d'un dataset audio à partir du jeu de données [AudioSet](https://research.google.com/audioset//download.html) de Google Research. Il traite les défis suivants :
-* **Data Scraping** : Récupération automatisée de flux audio via des sources en ligne.
-* **Metadata Engineering** : Nettoyage de données brutes via expressions régulières (Regex) et enrichissement sémantique des étiquettes (IDs vers noms de classes).
-* **Traitement de Signal** : Segmentation temporelle précise pour isoler les événements sonores pertinents.
-* **Exploration visuelle** : Analyse des spectrogrammes et des distributions de fréquences.
-
-##  Architecture du Pipeline
-
-### 1. Extraction et Nettoyage de Métadonnées
-La première phase consiste à rendre les fichiers `.csv` bruts exploitables :
-- Conversion des identifiants alphanumériques en étiquettes humaines (ex: `/m/04rlf` devient `Ratchet`).
-- Analyse de la distribution des classes pour évaluer l'équilibre du dataset.
-- Utilisation de **Regex** complexes pour valider l'intégrité des données d'entrée.
-
-### 2. Pipeline de Traitement Audio
-Mise en œuvre d'un moteur robuste pour l'acquisition de données multimédias :
-- **Téléchargement sélectif** : Extraction uniquement de la piste audio pour optimiser la bande passante.
-- **Segmentation temporelle** : Découpage chirurgical des fichiers `.wav` ou `.mp3` selon les intervalles temporels fournis.
-- **Normalisation** : Formatage des segments pour garantir une cohérence de fréquence d'échantillonnage (Sampling Rate).
-
-### 3. Analyse et Visualisation de Signal
-Utilisation de `Librosa` et `Matplotlib` pour valider la qualité des données produites :
-- Génération de **spectrogrammes** pour visualiser l'intensité fréquentielle.
-- Étude des formes d'onde (waveforms) pour identifier les motifs sonores.
-
-
-
-##  Structure du Dépôt
+## Repository layout
 
 ```text
-.
-├── src/
-│   ├── metadata_processing.py  # Fonctions de nettoyage (Regex, mapping)
-│   ├── audio_acquisition.py    # Téléchargement et découpage audio
-│   └── data_pipeline.py        # Orchestration du flux de données
-├── notebooks/
-│   └── analysis.ipynb          # Visualisation interactive et spectrogrammes
-├── data/                       # Dataset généré (segments audio)
-└── requirements.txt            # Dépendances (Regex, Librosa, Youtube-dl, etc.)
+main/
+├── q1.py                   # AudioSet label utilities
+├── q2.py                   # Audio download and FFmpeg segmentation
+├── q3.py                   # Filtering, orchestration, and file naming
+├── visualize.ipynb         # Metadata analysis and pipeline walkthrough
+├── data/
+│   ├── audio_segments.csv
+│   ├── audio_segments_clean.csv
+│   └── ontology.json
+├── images/                 # Retained analysis figures
+├── environment.yml
+└── requirements.txt
+```
+
+## Setup
+
+The Conda environment installs both the Python wrapper and the native FFmpeg executable:
+
+```bash
+conda env create -f main/environment.yml
+conda activate ift6758-conda-env-2
+cd main
+jupyter lab visualize.ipynb
+```
+
+For a pip installation, install the packages in `main/requirements.txt` and install FFmpeg separately through your operating system.
+
+## Generate audio locally
+
+Run the pipeline from `main/`:
+
+```python
+from q3 import data_pipeline, rename_files
+
+data_pipeline("data/audio_segments_clean.csv", "Cough")
+rename_files("audio/Cough_cut", "data/audio_segments_clean.csv")
+```
+
+The generated files are written to `audio/<Label>_raw/` and `audio/<Label>_cut/`. These directories are ignored by Git and can be regenerated.
+
+Most public videos do not require authentication. If a video legitimately requires access from your own account, pass an external cookie export explicitly:
+
+```python
+data_pipeline(
+    "data/audio_segments_clean.csv",
+    "Cough",
+    cookiefile="/absolute/path/outside-this-repository/cookies.txt",
+)
+```
+
+Never place or commit a cookie export inside the repository. Some AudioSet videos may have been removed, made private, or restricted since the metadata was published; the pipeline skips unavailable items.
+
+## Retained results
+
+![AudioSet label correlation heatmap](main/images/heatmap.png)
+
+![Waveform and mel-spectrogram example](main/images/combined_plot.png)
