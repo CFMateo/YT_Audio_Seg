@@ -1,6 +1,6 @@
 # Reconstructing AudioSet Windows
 
-This repository is a small pipeline for turning AudioSet metadata into local audio clips. You choose a sound label such as `Cough`; the code finds the matching YouTube IDs, downloads the sources that are still available, cuts the annotated time windows with FFmpeg, and saves the resulting MP3 segments locally.
+This repository is a Python pipeline for turning AudioSet metadata into local audio clips. You choose a sound label such as `Cough`; the code finds the matching YouTube IDs, downloads the sources that are still available, cuts the annotated time windows with FFmpeg, and saves the resulting MP3 segments locally.
 
 The goal is to turn AudioSet's IDs and timestamps into a working set of audio I can inspect or prepare for later ML experiments. It does not train a model itself.
 
@@ -20,9 +20,9 @@ Cough | Speech | Child speech
 
 That row also shows the main catch: asking for `Cough` does not give you clips containing only coughs. AudioSet windows can have several labels and several sounds at once.
 
-Only the metadata and code are tracked in Git. Downloaded audio stays local.
+The metadata and code are tracked in Git, while downloaded audio stays local.
 
-I kept the stack simple:
+The pipeline uses:
 
 - `pandas` and Python's `json` module read the metadata, map ontology IDs to names, and filter rows by label;
 - `yt-dlp` retrieves the best available audio stream from each source;
@@ -49,7 +49,7 @@ data_pipeline("data/audio_segments_clean.csv", "Cough")
 rename_files("audio/Cough_cut", "data/audio_segments_clean.csv")
 ```
 
-I kept renaming as a separate step because the original exercise treated it as a post-processing pass.
+I kept renaming as a separate post-processing step, which lets existing clips receive timestamped filenames without being downloaded again.
 
 ```text
 audio/
@@ -102,7 +102,7 @@ The number I find most useful is 76.73%. It makes the limitation concrete: this 
 
 ## Code and checks
 
-The project is deliberately small:
+The repository is organized around these components:
 
 ```text
 main/
