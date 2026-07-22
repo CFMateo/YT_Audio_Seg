@@ -6,14 +6,12 @@ import csv
 import threading
 from tqdm import tqdm
 from os.path import exists
-from pathlib import Path
-from typing import Optional
 
 import yt_dlp as youtube_dl
 
 
 
-def download_audio(YTID: str, path: str, cookiefile: Optional[str] = None) -> None:
+def download_audio(YTID: str, path: str, cookiefile: str = None) -> None:
     """
     Créez une fonction qui télécharge l'audio de la vidéo Youtube avec un identifiant donné
     et l'enregistre dans le dossier donné par `path`. Téléchargez-le en mp3. S'il y a un problème lors du téléchargement du fichier, gérez l'exception. Si il y a déjà un fichier à `path`, la fonction devrait retourner sans tenter de le télécharger à nouveau.
@@ -44,10 +42,10 @@ def download_audio(YTID: str, path: str, cookiefile: Optional[str] = None) -> No
     }
 
     if cookiefile is not None:
-        cookie_path = Path(cookiefile).expanduser()
-        if not cookie_path.is_file():
-            raise FileNotFoundError(f"Cookie file not found: {cookie_path}")
-        ydl_opts["cookiefile"] = str(cookie_path)
+        cookiefile = os.path.expanduser(cookiefile)
+        if not exists(cookiefile):
+            raise FileNotFoundError(f"Fichier de cookies introuvable: {cookiefile}")
+        ydl_opts["cookiefile"] = cookiefile
 
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -83,7 +81,6 @@ if __name__== '__main__':
 
     cut_audio("TEST_RAW.mp3","TEST_CUT.mp3",5, 10)
     print("cut exists?", os.path.exists("TEST_CUT"))
-
 
 
 

@@ -1,11 +1,9 @@
 import re
 import os
 import pandas as pd
-from pathlib import Path
 from tqdm import tqdm
 from q1 import contains_label
 from q2 import download_audio, cut_audio
-from typing import Optional
 
 
 def _segment_filename(ytid: str, start: float, end: float) -> str:
@@ -32,7 +30,7 @@ def filter_df(csv_path: str, label: str) -> pd.DataFrame:  #List[str]
 
 
 
-def data_pipeline(csv_path: str, label: str, cookiefile: Optional[str] = None) -> None:
+def data_pipeline(csv_path: str, label: str, cookiefile: str = None) -> None:
     """
     En utilisant vos fonctions précédemment créées, écrivez une fonction qui prend un csv traité et pour chaque vidéo avec l'étiquette donnée:
     1. Le télécharge à <label>_raw/<ID>.mp3
@@ -48,10 +46,9 @@ def data_pipeline(csv_path: str, label: str, cookiefile: Optional[str] = None) -
     cookiefile est facultatif et doit désigner un fichier conservé hors du dépôt.
     """
     if cookiefile is not None:
-        cookie_path = Path(cookiefile).expanduser()
-        if not cookie_path.is_file():
-            raise FileNotFoundError(f"Cookie file not found: {cookie_path}")
-        cookiefile = str(cookie_path)
+        cookiefile = os.path.expanduser(cookiefile)
+        if not os.path.isfile(cookiefile):
+            raise FileNotFoundError(f"Fichier de cookies introuvable: {cookiefile}")
 
     df_filtrer = filter_df(csv_path, label)
     
